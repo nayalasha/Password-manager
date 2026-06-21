@@ -1,25 +1,60 @@
 import customtkinter as ctk
 from tkinter import messagebox
+import sqlite3
+import random
+import string
 
+# ---------------- DATABASE ----------------
 
-# Appearance
+conn = sqlite3.connect("passwords.db")
+cursor = conn.cursor()
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS passwords (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    website TEXT,
+    username TEXT,
+    password TEXT
+)
+""")
+
+conn.commit()
+
+# ---------------- APPEARANCE ----------------
+
 ctk.set_appearance_mode("dark")
 
-# Window
+# ---------------- WINDOW ----------------
+
 window = ctk.CTk()
 window.title("Password Manager")
 window.geometry("1280x720")
 window.resizable(False, False)
 
+# ---------------- PASSWORD GENERATOR ----------------
 
-# ---------- FUNCTIONS ----------
+def generate_password():
+    characters = (
+        string.ascii_letters +
+        string.digits +
+        "!@#$%^&*"
+    )
+
+    generated_password = ""
+
+    for i in range(12):
+        generated_password += random.choice(characters)
+
+    return generated_password
+
+
+# ---------------- FUNCTIONS ----------------
 
 def submit():
     website_info = website.get()
     username_info = username.get()
     password_info = password.get()
 
-    # Don't save empty entries
     if website_info == "" or username_info == "" or password_info == "":
         messagebox.showwarning(
             "Missing Information",
@@ -27,22 +62,20 @@ def submit():
         )
         return
 
-    # Save information
-    with open("database.db", "a") as f:
-        f.write(f"Website: {website_info}\n")
-        f.write(f"Username: {username_info}\n")
-        f.write(f"Password: {password_info}\n\n")
+    cursor.execute(
+        "INSERT INTO passwords (website, username, password) VALUES (?, ?, ?)",
+        (website_info, username_info, password_info)
+    )
 
-    # Update textbox
+    conn.commit()
+
     update_textbox()
 
-    # Popup
     messagebox.showinfo(
         "Success",
         "Password saved successfully!"
     )
 
-    # Clear entries
     website.delete(0, "end")
     username.delete(0, "end")
     password.delete(0, "end")
@@ -53,13 +86,19 @@ def update_textbox():
 
     listbox.delete("1.0", "end")
 
-    try:
-        with open("database.db", "r") as f:
-            contents = f.read()
-            listbox.insert("1.0", contents)
+    cursor.execute(
+        "SELECT website, username, password FROM passwords"
+    )
 
-    except FileNotFoundError:
-        pass
+    rows = cursor.fetchall()
+
+    for row in rows:
+        listbox.insert(
+            "end",
+            f"Website: {row[0]}\n"
+            f"Username: {row[1]}\n"
+            f"Password: {row[2]}\n\n"
+        )
 
     listbox.configure(state="disabled")
 
@@ -69,7 +108,7 @@ def make_password():
     password.insert(0, generate_password())
 
 
-# ---------- TITLE ----------
+# ---------------- TITLE ----------------
 
 title = ctk.CTkLabel(
     window,
@@ -78,8 +117,7 @@ title = ctk.CTkLabel(
 )
 title.pack(pady=20)
 
-
-# ---------- ENTRIES ----------
+# ---------------- ENTRIES ----------------
 
 website = ctk.CTkEntry(
     window,
@@ -103,8 +141,7 @@ password = ctk.CTkEntry(
 )
 password.pack(pady=10)
 
-
-# ---------- BUTTONS ----------
+# ---------------- BUTTONS ----------------
 
 generate_button = ctk.CTkButton(
     window,
@@ -120,8 +157,7 @@ submit_button = ctk.CTkButton(
 )
 submit_button.pack(pady=10)
 
-
-# ---------- TEXTBOX ----------
+# ---------------- TEXTBOX ----------------
 
 listbox = ctk.CTkTextbox(
     window,
@@ -132,24 +168,8 @@ listbox = ctk.CTkTextbox(
 )
 listbox.pack(pady=20)
 
-# Generate password function
-import random
-import string
+# ---------------- START ----------------
 
-def generate_password():
-    characters = string.ascii_letters + string.digits
-    password = ""
-
-    for i in range(12):
-        password += random.choice(characters)
-
-    return password
-
-
-
-
-# Load saved passwords when the app starts
 update_textbox()
 
-# Run app
 window.mainloop()
