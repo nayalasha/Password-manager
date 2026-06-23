@@ -107,6 +107,12 @@ def make_password():
     password.delete(0, "end")
     password.insert(0, generate_password())
 
+def toggle_password_visibility():
+    if password.cget("show") == "*":
+        password.configure(show="")
+    else:
+        password.configure(show="*")
+
 
 # ---------------- TITLE ----------------
 
@@ -116,6 +122,15 @@ title = ctk.CTkLabel(
     font=("Arial", 30, "bold")
 )
 title.pack(pady=20)
+
+# ---------------- CHECKBOX ----------------
+
+show_password = ctk.CTkCheckBox(
+    window,
+    text="Show Password",
+    command=toggle_password_visibility
+)
+show_password.pack(pady=10)
 
 # ---------------- ENTRIES ----------------
 
