@@ -47,7 +47,6 @@ def generate_password():
 
     return generated_password
 
-
 # ---------------- FUNCTIONS ----------------
 
 def submit():
@@ -83,7 +82,6 @@ def submit():
 
 def update_textbox():
     listbox.configure(state="normal")
-
     listbox.delete("1.0", "end")
 
     cursor.execute(
@@ -107,12 +105,67 @@ def make_password():
     password.delete(0, "end")
     password.insert(0, generate_password())
 
+
 def toggle_password_visibility():
     if password.cget("show") == "*":
         password.configure(show="")
     else:
         password.configure(show="*")
 
+
+def search():
+    website_name = website.get()
+
+    cursor.execute(
+        "SELECT username, password FROM passwords WHERE LOWER(website)=LOWER(?)",
+        (website_name,)
+    )
+
+    result = cursor.fetchone()
+
+    if result:
+        messagebox.showinfo(
+            "Website Found",
+            f"Username: {result[0]}\nPassword: {result[1]}"
+        )
+    else:
+        messagebox.showwarning(
+            "Not Found",
+            "No password saved for that website."
+        )
+
+
+def delete():
+    website_name = website.get()
+
+    cursor.execute(
+        "SELECT * FROM passwords WHERE LOWER(website)=LOWER(?)",
+        (website_name,)
+    )
+
+    result = cursor.fetchone()
+
+    if result:
+        cursor.execute(
+            "DELETE FROM passwords WHERE LOWER(website)=LOWER(?)",
+            (website_name,)
+        )
+
+        conn.commit()
+
+        update_textbox()
+
+        messagebox.showinfo(
+            "Success",
+            "Password deleted."
+        )
+    else:
+        messagebox.showwarning(
+            "Not Found",
+            "Website not found."
+        )
+
+    website.delete(0, "end")
 
 # ---------------- TITLE ----------------
 
@@ -123,65 +176,101 @@ title = ctk.CTkLabel(
 )
 title.pack(pady=20)
 
-# ---------------- CHECKBOX ----------------
+# ---------------- FRAMES ----------------
 
-show_password = ctk.CTkCheckBox(
-    window,
-    text="Show Password",
-    command=toggle_password_visibility
-)
-show_password.pack(pady=10)
+left_frame = ctk.CTkFrame(window)
+left_frame.pack(side="left", padx=50, pady=20)
+
+right_frame = ctk.CTkFrame(window)
+right_frame.pack(side="right", padx=50, pady=20)
 
 # ---------------- ENTRIES ----------------
 
 website = ctk.CTkEntry(
-    window,
+    left_frame,
     width=300,
     placeholder_text="Website"
 )
 website.pack(pady=10)
 
 username = ctk.CTkEntry(
-    window,
+    left_frame,
     width=300,
     placeholder_text="Username"
 )
 username.pack(pady=10)
 
 password = ctk.CTkEntry(
-    window,
+    left_frame,
     width=300,
     placeholder_text="Password",
     show="*"
 )
 password.pack(pady=10)
 
+# ---------------- CHECKBOX ----------------
+
+show_password = ctk.CTkCheckBox(
+    left_frame,
+    text="Show Password",
+    command=toggle_password_visibility
+)
+show_password.pack(pady=10)
+
 # ---------------- BUTTONS ----------------
 
 generate_button = ctk.CTkButton(
-    window,
+    left_frame,
     text="Generate Password",
     command=make_password
 )
 generate_button.pack(pady=10)
 
 submit_button = ctk.CTkButton(
-    window,
+    left_frame,
     text="Save Password",
     command=submit
 )
 submit_button.pack(pady=10)
 
-# ---------------- TEXTBOX ----------------
+search_button = ctk.CTkButton(
+    left_frame,
+    text="Search",
+    command=search
+)
+search_button.pack(pady=10)
+
+delete_title = ctk.CTkLabel(
+    left_frame,
+    text="Enter a website name above to delete it.",
+    font=("Arial", 10)
+)
+delete_title.pack(pady=(15, 5))
+
+delete_button = ctk.CTkButton(
+    left_frame,
+    text="Delete",
+    command=delete
+)
+delete_button.pack(pady=10)
+
+# ---------------- RIGHT SIDE ----------------
+
+saved_label = ctk.CTkLabel(
+    right_frame,
+    text="Saved Passwords",
+    font=("Arial", 20, "bold")
+)
+saved_label.pack(pady=10)
 
 listbox = ctk.CTkTextbox(
-    window,
+    right_frame,
     width=500,
-    height=250,
+    height=400,
     state="disabled",
     font=("Arial", 12)
 )
-listbox.pack(pady=20)
+listbox.pack(pady=10)
 
 # ---------------- START ----------------
 
